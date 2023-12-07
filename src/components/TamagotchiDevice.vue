@@ -1,10 +1,10 @@
 <template>
 	<div class="container">
-		<h1>{{ pageTitle }}</h1>
 		<div class="gotchi-frame">
-
 			<div class="frame-screen">
-				<img src="../assets/sprites/sprite_neutral.png" alt="">
+				<div class="frame-wrapper">
+					<img alt="" :src="spriteImagePath">
+				</div>
 			</div>
 		</div>
 	</div>
@@ -12,17 +12,26 @@
 
 <script>
 export default {
-	props: {
-		pageTitle: String
-	}
-}
+  props: {
+	startGotchi: Boolean,
+	currentFrame: String,
+	spritePath: String,
+	spriteDirection: String,
+  },
+  computed: {
+  spriteImagePath() {
+    return require(`@/assets/sprites/${this.currentFrame}`);
+  },
+
+},
+};
 </script>
 
 
 <style scoped>
 
 .container {
-	max-width: 800px;
+	max-width: 600px;
 	margin-left: auto;
 	margin-right: auto;
 }
@@ -30,7 +39,7 @@ export default {
 .gotchi-frame {
 	display: flex;
 	justify-content: center;
-	align-items: center;
+	align-items: flex-end;
 	height: 80vh;
 	background-image: url("../assets/egg-shape.svg");
 	background-position: center center;
@@ -44,14 +53,24 @@ export default {
 
 	.frame-screen {
 		background-color: salmon;
-		border: solid 2px black;
-		height: 16rem;
-		width: 16rem;
+		border: solid 8px black;
+		border-radius: 1rem;
+		height: 18rem;
+		width: 15rem;
 		display: flex;
 		justify-content: center;
-		
+		margin-bottom: 33%;
+	}
+
+	.frame-wrapper {
+		width: 80%;
+		align-self: center;
 		> img {
+			width: 100%;
+			height: auto;
 			image-rendering: crisp-edges;
+			object-fit: contain;
+
 		}
 	}
 }
