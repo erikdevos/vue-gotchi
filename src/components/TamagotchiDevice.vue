@@ -278,7 +278,7 @@ export default {
 			this.gameState = 'reveal';
 			setTimeout(() => {
 				this.endGame();
-			}, 2500);
+			}, 5000);
 		},
 
 		determineWinner(player, gotchi) {
@@ -289,10 +289,10 @@ export default {
 				(player === 'paper' && gotchi === 'rock') ||
 				(player === 'scissors' && gotchi === 'paper')
 			) {
-				return 'win';
+				return 'YOU WIN';
 			}
 			
-			return 'lose';
+			return 'YOU LOSE';
 		},
 
 		endGame() {
@@ -756,18 +756,14 @@ export default {
 	justify-content: center;
 	aspect-ratio: 1/1;
 	padding: 0.15rem;
-	background-color: #fff;
 	border: solid 3px #000;
-	border-radius: 0.5rem;
 	cursor: pointer;
 	user-select: none;
-	box-shadow: 1px 1px 3px rgba(0,0,0,0.5);
 	transition: all 0.15s ease;
 	flex: 1;
 }
 
 .choice-btn:hover {
-	background-color: salmon;
 	transform: translateY(-1px);
 	box-shadow: 1px 1px 4px rgba(0,0,0,0.6);
 }
@@ -888,21 +884,8 @@ export default {
 	padding: 0.2rem 0.5rem;
 	border-radius: 0.3rem;
 	margin-top: 0.3rem;
-}
-
-.result-text.win {
-	background-color: #53bf8e;
-	color: #fff;
-}
-
-.result-text.lose {
-	background-color: #e74c3c;
-	color: #fff;
-}
-
-.result-text.tie {
-	background-color: #f39c12;
-	color: #fff;
+	border: solid 2px #000;
+	color: black;
 }
 
 @media (max-width: 600px) {
