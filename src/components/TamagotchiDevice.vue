@@ -388,6 +388,12 @@ export default {
 	background-size: contain;
 }
 
+@media (max-width: 600px) {
+	.gotchi-frame {
+		height: 90vh;
+	}
+}
+
 .frame-screen {
 	position: relative;
 	display: flex;
@@ -401,6 +407,16 @@ export default {
 	margin-bottom: 3rem;
 	box-shadow: inset 0 0 12px rgba(0,0,0,0.25);
 	transition: background-color 0.3s ease;
+}
+
+@media (max-width: 600px) {
+	.frame-screen {
+		height: 14rem;
+		width: 11.5rem;
+		margin-top: 2rem;
+		margin-bottom: 1.5rem;
+		border-width: 6px;
+	}
 }
 
 .frame-screen.attention-flash {
@@ -451,7 +467,13 @@ export default {
 .frame-wrapper {
 	width: 80%;
 	align-self: end;
-	margin-bottom: 1rem;
+	margin-bottom: 0.5rem;
+}
+
+@media (max-width: 600px) {
+	.frame-wrapper {
+		margin-bottom: 0.3rem;
+	}
 }
 
 .frame-wrapper.is-acting img {
@@ -489,6 +511,14 @@ export default {
 	user-select: none;
 	box-shadow: 1px 1px 5px rgba(0,0,0,0.5);
 	transition: background-color 0.15s ease;
+}
+
+@media (max-width: 600px) {
+	.button-bar button {
+		padding: 0.6rem;
+		font-size: 0.75rem;
+		border-width: 4px;
+	}
 }
 
 .button-bar button:hover:not(:disabled) {
