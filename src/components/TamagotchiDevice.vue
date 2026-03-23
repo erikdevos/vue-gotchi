@@ -399,7 +399,7 @@ export default {
 	position: relative;
 	display: flex;
 	background-color: #c8d8a0;
-	border: solid 6px #000000;
+	border: solid 5px #000000;
 	border-radius: 1rem;
 	height: 20rem;
 	width: 17rem;
@@ -454,7 +454,7 @@ export default {
 	border: solid 3px #000000;
 	border-radius: 0.3rem;
 	font-weight: 700;
-	font-size: 0.8rem;
+	font-size: 0.7rem;
 	flex: 1;
 	text-align: center;
 	position: relative;
