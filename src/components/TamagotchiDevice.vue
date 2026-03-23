@@ -14,9 +14,55 @@
 					</div>
 				</div>
 
-				<!-- Sprite -->
+				<!-- Sprite or Game -->
 				<div class="frame-wrapper" :class="{ 'is-acting': isActing }">
-					<img alt="" :src="currentSprite">
+					<!-- Normal sprite -->
+					<img v-if="!isPlayingGame" alt="" :src="currentSprite">
+					
+					<!-- Rock Paper Scissors Game -->
+					<div v-if="isPlayingGame" class="game-board">
+						<!-- Gotchi sprite during game -->
+						<div class="game-gotchi-sprite">
+							<img alt="" :src="currentSprite">
+						</div>
+						
+						<!-- Game title -->
+						<div class="game-title">Rock Paper Scissors VS GOTCHI</div>
+						
+						<!-- Choice buttons -->
+						<div v-if="gameState === 'playing'" class="game-choices">
+							<button @click="makeChoice('rock')" class="choice-btn">
+								<div class="choice-icon rock-icon"></div>
+								<span>ROCK</span>
+							</button>
+							<button @click="makeChoice('paper')" class="choice-btn">
+								<div class="choice-icon paper-icon"></div>
+								<span>PAPER</span>
+							</button>
+							<button @click="makeChoice('scissors')" class="choice-btn">
+								<div class="choice-icon scissors-icon"></div>
+								<span>SCISSORS</span>
+							</button>
+						</div>
+						
+						<!-- Result display -->
+						<div v-if="gameState === 'reveal'" class="game-result">
+							<div class="choices-display">
+								<div class="choice-display">
+									<div class="choice-icon" :class="playerChoice + '-icon'"></div>
+									<span>YOU</span>
+								</div>
+								<div class="vs-text">VS</div>
+								<div class="choice-display">
+									<div class="choice-icon" :class="gotchiChoice + '-icon'"></div>
+									<span>GOTCHI</span>
+								</div>
+							</div>
+							<div class="result-text" :class="gameResult">
+								{{ gameResult.toUpperCase() }}!
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
 
@@ -33,6 +79,9 @@
 				</button>
 				<button @click="doPet" :disabled="!canAct" title="Pet your gotchi (+happiness)">
 					Pet
+				</button>
+				<button @click="doGame" :disabled="!canAct" title="Play Rock Paper Scissors">
+					Game
 				</button>
 				<button v-if="isDead" @click="restart" class="restart-btn" title="Start a new gotchi">
 					Restart
@@ -84,13 +133,18 @@ export default {
 			happiness:   80,
 			energy:      80,
 			mood:        80, // 0-100, changes slowly based on happiness
-			status:      'idle', // idle | eating | playing | sleeping | waking | sick | attention | dead
+			status:      'idle', // idle | eating | playing | sleeping | waking | sick | attention | dead | game
 			currentFrame: 'calm',
 			isActing:    false,  // true only during one-shot action animations
 			animTimeout: null,
 			decayInterval: null,
 			attentionInterval: null, // for attention-seeking behavior
 			petCount: 0, // track pet usage for diminishing returns
+			// Game state
+			gameState: null, // 'playing' | 'reveal' | null
+			playerChoice: null, // 'rock' | 'paper' | 'scissors'
+			gotchiChoice: null,
+			gameResult: null, // 'win' | 'lose' | 'tie',
 			overfeedCount: 0, // track overfeeding for sickness/death
 		};
 	},
@@ -106,7 +160,11 @@ export default {
 			return this.status === 'dead';
 		},
 		canAct() {
-			return !this.isDead && !this.isSleeping && !this.isActing && this.status !== 'attention';
+			return !this.isDead && !this.isSleeping && !this.isActing && this.status !== 'attention' && this.status !== 'game';
+		},
+
+		isPlayingGame() {
+			return this.status === 'game';
 		},
 
 		moodState() {
@@ -172,6 +230,78 @@ export default {
 
 			this.status = 'idle';
 			this.playAnimation(animKey);
+		},
+
+		// ── Rock Paper Scissors Game ───────────────────────────────────────────
+		doGame() {
+			if (!this.canAct) return;
+			
+			// Start game with neutral idle animation
+			this.status = 'game';
+			this.gameState = 'playing';
+			this.playerChoice = null;
+			this.gotchiChoice = null;
+			this.gameResult = null;
+			this.stopAnimation();
+			this.playAnimation('idle');
+		},
+
+		makeChoice(choice) {
+			if (this.gameState !== 'playing') return;
+			
+			this.playerChoice = choice;
+			
+			// Gotchi makes random choice
+			const choices = ['rock', 'paper', 'scissors'];
+			this.gotchiChoice = choices[Math.floor(Math.random() * 3)];
+			
+			// Determine winner
+			this.gameResult = this.determineWinner(this.playerChoice, this.gotchiChoice);
+			
+			// Show gotchi reaction based on result
+			this.stopAnimation();
+			if (this.gameResult === 'win') {
+				// Player wins = gotchi loses (sad)
+				this.playAnimation('idle_sad');
+				this.happiness = Math.min(100, this.happiness + 15);
+				this.energy = Math.max(0, this.energy - 5);
+			} else if (this.gameResult === 'lose') {
+				// Player loses = gotchi wins (happy)
+				this.playAnimation('idle_happy');
+				this.happiness = Math.max(0, this.happiness - 5);
+			} else {
+				// Tie = neutral
+				this.playAnimation('idle');
+			}
+			
+			// Show result briefly, then return to normal
+			this.gameState = 'reveal';
+			setTimeout(() => {
+				this.endGame();
+			}, 2500);
+		},
+
+		determineWinner(player, gotchi) {
+			if (player === gotchi) return 'tie';
+			
+			if (
+				(player === 'rock' && gotchi === 'scissors') ||
+				(player === 'paper' && gotchi === 'rock') ||
+				(player === 'scissors' && gotchi === 'paper')
+			) {
+				return 'win';
+			}
+			
+			return 'lose';
+		},
+
+		endGame() {
+			this.status = 'idle';
+			this.gameState = null;
+			this.playerChoice = null;
+			this.gotchiChoice = null;
+			this.gameResult = null;
+			this.startIdle();
 		},
 
 		// ── Actions ───────────────────────────────────────────────────────────
@@ -404,7 +534,7 @@ export default {
 	height: 20rem;
 	width: 17rem;
 	justify-content: center;
-	margin-top: 3rem;
+	margin-top: 4rem;
 	margin-bottom: 1.5rem;
 	box-shadow: inset 0 0 12px rgba(0,0,0,0.25);
 	transition: background-color 0.3s ease;
@@ -450,7 +580,6 @@ export default {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	height: 1rem;
 	border: solid 3px #000000;
 	border-radius: 0.3rem;
 	font-weight: 700;
@@ -473,10 +602,12 @@ export default {
 .status-bar .bar-label {
 	z-index: 3;
 	position: relative;
+	padding-top: 1px;
+	padding-bottom: 1px;
 }
 
 .frame-wrapper {
-	width: 80%;
+	width: 85%;
 	align-self: end;
 	margin-bottom: 0.5rem;
 }
@@ -501,7 +632,11 @@ export default {
 
 .button-bar {
 	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
 	gap: 0.5rem;
+	max-width: 69%;
+	
 }
 
 .button-bar button {
@@ -568,6 +703,234 @@ export default {
 @keyframes attention-pulse {
 	0%, 100% { background-color: #c8d8a0; }
 	50% { background-color: #ffeb3b; }
+}
+
+/* ─── Rock Paper Scissors Game UI ───────────────────────────────────────────── */
+.game-board {
+	width: 100%;
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+}
+
+.game-gotchi-sprite {
+	width: 50%;
+	margin-bottom: 1rem;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.game-gotchi-sprite img {
+	width: 100%;
+	height: auto;
+	image-rendering: crisp-edges;
+	filter: grayscale(1);
+	object-fit: contain;
+}
+
+.game-title {
+	font-family: "Comic Sans MS", "Comic Sans", sans-serif;
+	font-size: 0.8rem;
+	font-weight: 900;
+	color: #000;
+	margin-bottom: 1rem;
+	text-align: center;
+}
+
+.game-choices {
+	display: flex;
+	flex: 1;
+	width: 100%;
+	gap: 0.5rem;
+	margin-bottom: 1rem;
+}
+
+.choice-btn {
+	all: unset;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	aspect-ratio: 1/1;
+	padding: 0.15rem;
+	background-color: #fff;
+	border: solid 3px #000;
+	border-radius: 0.5rem;
+	cursor: pointer;
+	user-select: none;
+	box-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+	transition: all 0.15s ease;
+	flex: 1;
+}
+
+.choice-btn:hover {
+	background-color: salmon;
+	transform: translateY(-1px);
+	box-shadow: 1px 1px 4px rgba(0,0,0,0.6);
+}
+
+.choice-btn:active {
+	transform: translateY(1px);
+	box-shadow: inset 1px 1px 2px rgba(0,0,0,0.4);
+}
+
+.choice-btn span {
+	font-family: "Comic Sans MS", "Comic Sans", sans-serif;
+	font-size: 0.5rem;
+	font-weight: 900;
+	margin-top: 0.2rem;
+}
+
+.choice-icon {
+	width: 20px;
+	height: 20px;
+}
+
+/* Rock - Simple rounded square */
+.rock-icon {
+	background: #000;
+	border-radius: 4px;
+	position: relative;
+}
+
+.rock-icon::before {
+	content: '';
+	position: absolute;
+	width: 4px;
+	height: 4px;
+	background: #c8d8a0;
+	top: 4px;
+	left: 4px;
+}
+
+/* Paper - Rectangle with lines */
+.paper-icon {
+	background: #000;
+	position: relative;
+	height: 24px;
+}
+
+.paper-icon::before,
+.paper-icon::after {
+	content: '';
+	position: absolute;
+	height: 2px;
+	background: #c8d8a0;
+	left: 3px;
+	right: 3px;
+}
+
+.paper-icon::before { top: 6px; }
+.paper-icon::after { top: 12px; }
+
+/* Scissors - X shape */
+.scissors-icon {
+	position: relative;
+}
+
+.scissors-icon::before,
+.scissors-icon::after {
+	content: '';
+	position: absolute;
+	width: 3px;
+	height: 100%;
+	background: #000;
+	left: 50%;
+	transform-origin: center;
+}
+
+.scissors-icon::before { transform: rotate(45deg); }
+.scissors-icon::after { transform: rotate(-45deg); }
+
+.game-result {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	width: 100%;
+	margin-bottom: 1rem;
+}
+
+.choices-display {
+	display: flex;
+	align-items: center;
+	justify-content: space-around;
+	width: 100%;
+	margin-bottom: 0.5rem;
+}
+
+.choice-display {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.choice-display span {
+	font-family: "Comic Sans MS", "Comic Sans", sans-serif;
+	font-size: 0.5rem;
+	font-weight: 900;
+	margin-top: 0.2rem;
+}
+
+.vs-text {
+	font-family: "Comic Sans MS", "Comic Sans", sans-serif;
+	font-size: 0.6rem;
+	font-weight: 900;
+	color: #000;
+}
+
+.result-text {
+	font-family: "Comic Sans MS", "Comic Sans", sans-serif;
+	font-size: 0.8rem;
+	font-weight: 900;
+	padding: 0.2rem 0.5rem;
+	border-radius: 0.3rem;
+	margin-top: 0.3rem;
+}
+
+.result-text.win {
+	background-color: #53bf8e;
+	color: #fff;
+}
+
+.result-text.lose {
+	background-color: #e74c3c;
+	color: #fff;
+}
+
+.result-text.tie {
+	background-color: #f39c12;
+	color: #fff;
+}
+
+@media (max-width: 600px) {
+	.game-title {
+		font-size: 0.6rem;
+	}
+	
+	.game-choices {
+		gap: 0.2rem;
+	}
+	
+	.choice-btn {
+		padding: 0.2rem;
+		border-width: 2px;
+	}
+	
+	.choice-btn span {
+		font-size: 0.4rem;
+	}
+	
+	.choice-icon {
+		width: 16px;
+		height: 16px;
+	}
+	
+	.result-text {
+		font-size: 0.7rem;
+	}
 }
 
 </style>
