@@ -386,135 +386,136 @@ export default {
 	background-position: center center;
 	background-repeat: no-repeat;
 	background-size: contain;
+}
 
-	.frame-screen {
-		position: relative;
-		background-color: #c8d8a0;
-		border: solid 8px black;
-		border-radius: 1rem;
-		height: 18rem;
-		width: 15rem;
-		display: flex;
-		justify-content: center;
-		margin-top: 5rem;
-		margin-bottom: 3rem;
-		box-shadow: inset 0 0 12px rgba(0,0,0,0.25);
-		transition: background-color 0.3s ease;
+.frame-screen {
+	position: relative;
+	display: flex;
+	background-color: #c8d8a0;
+	border: solid 8px #000000;
+	border-radius: 1rem;
+	height: 18rem;
+	width: 15rem;
+	justify-content: center;
+	margin-top: 5rem;
+	margin-bottom: 3rem;
+	box-shadow: inset 0 0 12px rgba(0,0,0,0.25);
+	transition: background-color 0.3s ease;
+}
 
-		&.attention-flash {
-			background-color: #ffeb3b;
-			animation: attention-pulse 0.6s ease;
-		}
-	}
+.frame-screen.attention-flash {
+	background-color: #ffeb3b;
+	animation: attention-pulse 0.6s ease;
+}
 
-	.status-bars-wrapper {
-		position: absolute;
-		width: calc(100% - 1rem);
-		margin-top: 0.5rem;
-		margin-left: 0.5rem;
-		margin-right: 0.5rem;
-		gap: 0.5rem;
-		display: flex;
-	}
+.status-bars-wrapper {
+	display: flex;
+	flex-direction: row;
+	position: absolute;
+	width: calc(100% - 1rem);
+	margin-top: 0.5rem;
+	margin-left: 0.5rem;
+	margin-right: 0.5rem;
+	gap: 0.5rem;
+}
 
-	.status-bar {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		height: 1rem;
-		border: solid 3px #000000;
-		border-radius: 0.3rem;
-		font-weight: bold;
-		font-size: 0.8rem;
-		flex: 1;
-		text-align: center;
-		position: relative;
-		overflow: hidden;
+.status-bar {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 1rem;
+	border: solid 3px #000000;
+	border-radius: 0.3rem;
+	font-weight: 700;
+	font-size: 0.8rem;
+	flex: 1;
+	text-align: center;
+	position: relative;
+	overflow: hidden;
+}
 
-		.bar-value {
-			height: 100%;
-			position: absolute;
-			left: 0;
-			top: 0;
-			z-index: 2;
-			transition: width 0.4s ease, background-color 0.4s ease;
-		}
+.status-bar .bar-value {
+	height: 100%;
+	position: absolute;
+	left: 0;
+	top: 0;
+	z-index: 2;
+	transition: width 0.4s ease, background-color 0.4s ease;
+}
 
-		.bar-label {
-			z-index: 3;
-			position: relative;
-		}
-	}
+.status-bar .bar-label {
+	z-index: 3;
+	position: relative;
+}
 
-	.frame-wrapper {
-		width: 80%;
-		align-self: end;
-		margin-bottom: 1rem;
+.frame-wrapper {
+	width: 80%;
+	align-self: end;
+	margin-bottom: 1rem;
+}
 
-		&.is-acting img {
-			animation: sprite-bounce 0.35s ease infinite alternate;
-		}
+.frame-wrapper.is-acting img {
+	animation: sprite-bounce 0.35s ease infinite alternate;
+}
 
-		> img {
-			width: 100%;
-			height: auto;
-			image-rendering: crisp-edges;
-			filter: grayscale(1);
-			object-fit: contain;
-		}
-	}
+.frame-wrapper > img {
+	width: 100%;
+	height: auto;
+	image-rendering: crisp-edges;
+	filter: grayscale(1);
+	object-fit: contain;
 }
 
 .button-bar {
 	display: flex;
 	gap: 0.5rem;
+}
 
-	button {
-		all: unset;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		padding: 0.5rem;
-		border-radius: 100%;
-		background-color: #FFFFFF;
-		aspect-ratio: 1/1;
-		text-align: center;
-		font-family: "Comic Sans MS", "Comic Sans", cursive;
-		font-size: 0.9rem;
-		font-weight: 900;
-		border: solid 5px #000000;
-		cursor: pointer;
-		user-select: none;
-		box-shadow: rgba(0, 0, 0, 0.5) 1px 1px 5px;
-		transition: background-color 0.15s ease;
+.button-bar button {
+	all: unset;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.5rem;
+	border-radius: 100%;
+	background-color: #FFFFFF;
+	aspect-ratio: 1/1;
+	text-align: center;
+	font-family: "Comic Sans MS", "Comic Sans", cursive;
+	font-size: 0.9rem;
+	font-weight: 900;
+	border: solid 5px #000000;
+	cursor: pointer;
+	user-select: none;
+	box-shadow: 1px 1px 5px rgba(0,0,0,0.5);
+	transition: background-color 0.15s ease;
+}
 
-		&:hover:not(:disabled) {
-			background-color: salmon;
-			color: #000000;
-			transform: translateY(0.1rem);
-			box-shadow: rgba(0, 0, 0, 0.5) 1px 1px 3px;
-		}
+.button-bar button:hover:not(:disabled) {
+	background-color: salmon;
+	color: #000000;
+	transform: translateY(0.1rem);
+	box-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+}
 
-		&:active:not(:disabled) {
-			transform: translateY(0.3rem);
-			box-shadow: rgba(0, 0, 0, 0.3) 1px 1px 0px;
-		}
+.button-bar button:active:not(:disabled) {
+	transform: translateY(0.3rem);
+	box-shadow: 1px 1px 0 rgba(0,0,0,0.3);
+}
 
-		&:disabled {
-			opacity: 0.4;
-			cursor: not-allowed;
-		}
+.button-bar button:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
 
-		&.restart-btn {
-			background-color: #e74c3c;
-			color: white;
-			font-weight: 900;
+.button-bar button.restart-btn {
+	background-color: #e74c3c;
+	color: #FFFFFF;
+	font-weight: 900;
+}
 
-			&:hover:not(:disabled) {
-				background-color: #c0392b;
-			}
-		}
-	}
+.button-bar button.restart-btn:hover:not(:disabled) {
+	background-color: #c0392b;
 }
 
 @keyframes sprite-bounce {
