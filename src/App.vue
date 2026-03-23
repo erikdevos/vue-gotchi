@@ -1,15 +1,6 @@
 <template>
-		<TamagotchiDevice
-			:startGotchi="startGotchi"
-			:spritePath="spritePath"
-			:spriteDirection="neutral"
-			:gotchiEnergy="gotchiEnergy"
-			:gotchiHappyness="gotchiHappyness"
-			:gotchiStatus="gotchiStatus"
-			@gotchi-status-update="updateGotchiStatus"
-		/>
+	<TamagotchiDevice />
 </template>
-
 
 <script>
 import TamagotchiDevice from './components/TamagotchiDevice.vue';
@@ -19,24 +10,6 @@ export default {
 	components: {
 		TamagotchiDevice
 	},
-
-	data() {
-		return {
-			startGotchi: true,
-			spritePath: 'sprites/sprite_',
-			spriteDirection: 'neutral',
-			gotchiEnergy: 100,
-			gotchiHappyness: 100,
-			gotchiStatus: 'alive'
-		};
-	},
-	
-	methods: {
-		updateGotchiStatus(status) {
-			this.gotchiStatus = status;
-		},
-	},
-
 }
 </script>
 
