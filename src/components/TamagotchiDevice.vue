@@ -31,6 +31,12 @@
 				<button @click="doSleep" :disabled="isDead || isActing" title="Put your gotchi to sleep">
 					{{ isSleeping ? 'Wake' : 'Sleep' }}
 				</button>
+				<button @click="doPet" :disabled="!canAct" title="Pet your gotchi (+happiness)">
+					Pet
+				</button>
+				<button v-if="isDead" @click="restart" class="restart-btn" title="Start a new gotchi">
+					Restart
+				</button>
 			</div>
 		</div>
 	</div>
@@ -42,18 +48,33 @@
 // Frame names map to /assets/sprites/sprite_<name>.png
 const ANIMATIONS = {
 	idle:     { frames: ['calm', 'casual', 'neutral', 'calm'],                        interval: 900,  loop: true  },
+	idle_happy: { frames: ['happy', 'joy', 'happy', 'calm'],                         interval: 900,  loop: true  },
+	idle_sad:   { frames: ['sad', 'neutral', 'sad', 'calm'],                         interval: 900,  loop: true  },
+	idle_mad:   { frames: ['mad', 'sad', 'mad', 'neutral'],                          interval: 900,  loop: true  },
 	eating:   { frames: ['active', 'happy', 'joy', 'happy', 'neutral'],               interval: 380,  loop: false },
 	playing:  { frames: ['fun', 'kiss_01', 'kiss_02', 'happy', 'joy', 'neutral'],     interval: 380,  loop: false },
+	petting:  { frames: ['kiss_01', 'kiss_02', 'happy', 'joy', 'neutral'],           interval: 400,  loop: false },
 	sleeping: { frames: ['sleep'],                                                     interval: 2000, loop: true  },
 	waking:   { frames: ['neutral', 'casual', 'calm'],                                interval: 600,  loop: false },
+	sick:     { frames: ['mad', 'sad', 'mad'],                                         interval: 800,  loop: true  },
+	overfeeding: { frames: ['mad', 'sad', 'mad', 'sad'],                               interval: 400,  loop: false },
+	attention: { frames: ['mad', 'sad', 'mad', 'neutral'],                            interval: 600,  loop: true  },
 	dead:     { frames: ['shocked', 'sad'],                                           interval: 1400, loop: true  },
 };
 
 // ─── Game Constants ───────────────────────────────────────────────────────────
 const DECAY_INTERVAL  = 6000; // ms per game tick
-const HAPPINESS_DECAY = 3;    // happiness lost per tick
+const HAPPINESS_DECAY = 3;    // base happiness lost per tick
 const ENERGY_DECAY    = 1.5;  // energy lost per tick
 const SLEEP_REGEN     = 8;    // energy gained per tick while sleeping
+const ENERGY_CRISIS_THRESHOLD = 25; // below this, happiness decays faster
+const SICKNESS_THRESHOLD = 15; // below this energy, gotchi gets sick
+const ATTENTION_THRESHOLD = 35; // below this happiness, gotchi seeks attention
+const MOOD_INERTIA = 0.1; // how quickly mood changes (0-1)
+const OVERFEED_BASE_PENALTY = 5; // base happiness lost when overfed
+const OVERFEED_SICKNESS_THRESHOLD = 4; // overfeed count to trigger sickness
+const OVERPET_THRESHOLD = 8; // pet count to trigger overpetting penalty
+const OVERPET_HAPPINESS_PENALTY = 3; // happiness lost when overpetted
 
 export default {
 	name: 'TamagotchiDevice',
@@ -62,11 +83,15 @@ export default {
 		return {
 			happiness:   80,
 			energy:      80,
-			status:      'idle', // idle | eating | playing | sleeping | waking | dead
+			mood:        80, // 0-100, changes slowly based on happiness
+			status:      'idle', // idle | eating | playing | sleeping | waking | sick | attention | dead
 			currentFrame: 'calm',
 			isActing:    false,  // true only during one-shot action animations
 			animTimeout: null,
 			decayInterval: null,
+			attentionInterval: null, // for attention-seeking behavior
+			petCount: 0, // track pet usage for diminishing returns
+			overfeedCount: 0, // track overfeeding for sickness/death
 		};
 	},
 
@@ -81,7 +106,14 @@ export default {
 			return this.status === 'dead';
 		},
 		canAct() {
-			return !this.isDead && !this.isSleeping && !this.isActing;
+			return !this.isDead && !this.isSleeping && !this.isActing && this.status !== 'attention';
+		},
+
+		moodState() {
+			if (this.mood >= 80) return 'happy';
+			if (this.mood >= 50) return 'neutral';
+			if (this.mood >= 25) return 'sad';
+			return 'mad';
 		},
 	},
 
@@ -131,17 +163,44 @@ export default {
 		},
 
 		startIdle() {
+			// Choose idle animation based on mood
+			let animKey = 'idle';
+			if (this.mood >= 80) animKey = 'idle_happy';
+			else if (this.mood >= 50) animKey = 'idle';
+			else if (this.mood >= 25) animKey = 'idle_sad';
+			else animKey = 'idle_mad';
+
 			this.status = 'idle';
-			this.playAnimation('idle');
+			this.playAnimation(animKey);
 		},
 
 		// ── Actions ───────────────────────────────────────────────────────────
 		doEat() {
 			if (!this.canAct) return;
-			this.energy    = Math.min(100, this.energy + 25);
-			this.happiness = Math.min(100, this.happiness + 5);
-			this.status = 'eating';
-			this.playAnimation('eating', () => this.startIdle());
+
+			// Check for overfeeding
+			if (this.energy >= 100) {
+				this.overfeedCount++;
+				
+				// Escalating penalty: each overfeed hurts more
+				const penalty = OVERFEED_BASE_PENALTY + (this.overfeedCount - 1) * 2;
+				this.happiness = Math.max(0, this.happiness - penalty);
+
+				// Check sickness threshold
+				if (this.overfeedCount >= OVERFEED_SICKNESS_THRESHOLD) {
+					this.startSickness();
+					return;
+				}
+
+				// Show overfeeding animation
+				this.status = 'overfeeding';
+				this.playAnimation('overfeeding', () => this.startIdle());
+			} else {
+				this.energy = Math.min(100, this.energy + 25);
+				this.happiness = Math.min(100, this.happiness + 5);
+				this.status = 'eating';
+				this.playAnimation('eating', () => this.startIdle());
+			}
 		},
 
 		doPlay() {
@@ -150,6 +209,23 @@ export default {
 			this.energy    = Math.max(0, this.energy - 15);
 			this.status = 'playing';
 			this.playAnimation('playing', () => this.startIdle());
+		},
+
+		doPet() {
+			if (!this.canAct) return;
+
+			// Check for overpetting
+			if (this.petCount >= OVERPET_THRESHOLD) {
+				this.happiness = Math.max(0, this.happiness - OVERPET_HAPPINESS_PENALTY);
+			} else {
+				// Diminishing returns: less effective if overused
+				const boost = Math.max(2, 8 - this.petCount * 0.5);
+				this.happiness = Math.min(100, this.happiness + boost);
+			}
+			
+			this.petCount++;
+			this.status = 'petting';
+			this.playAnimation('petting', () => this.startIdle());
 		},
 
 		doSleep() {
@@ -174,6 +250,17 @@ export default {
 			clearInterval(this.decayInterval);
 		},
 
+		restart() {
+			this.happiness = 80;
+			this.energy = 80;
+			this.mood = 80;
+			this.petCount = 0;
+			this.overfeedCount = 0;
+			this.status = 'idle';
+			this.startIdle();
+			this.startDecay();
+		},
+
 		startDecay() {
 			this.decayInterval = setInterval(() => {
 				if (this.isDead) return;
@@ -181,14 +268,85 @@ export default {
 				if (this.isSleeping) {
 					this.energy = Math.min(100, this.energy + SLEEP_REGEN);
 				} else {
-					this.happiness = Math.max(0, this.happiness - HAPPINESS_DECAY);
+					// Energy crisis: happiness decays faster when energy is low
+					let happinessDecay = HAPPINESS_DECAY;
+					if (this.energy < ENERGY_CRISIS_THRESHOLD) {
+						// Scale up: at 0 energy, decay is 2x; at 25 energy, decay is 1x
+						const factor = 1 + (ENERGY_CRISIS_THRESHOLD - this.energy) / ENERGY_CRISIS_THRESHOLD;
+						happinessDecay = HAPPINESS_DECAY * factor;
+					}
+					this.happiness = Math.max(0, this.happiness - happinessDecay);
 					this.energy    = Math.max(0, this.energy - ENERGY_DECAY);
+				}
+
+				// Update mood slowly based on happiness
+				const moodDiff = this.happiness - this.mood;
+				this.mood += moodDiff * MOOD_INERTIA;
+
+				// Handle sickness
+				if (this.energy < SICKNESS_THRESHOLD && this.status !== 'sick' && !this.isSleeping) {
+					this.startSickness();
+				} else if (this.energy >= SICKNESS_THRESHOLD && this.status === 'sick') {
+					this.stopSickness();
+				}
+
+				// Handle overfeeding recovery (slowly reduce overfeed count)
+				if (this.overfeedCount > 0 && this.energy < 90) {
+					this.overfeedCount = Math.max(0, this.overfeedCount - 0.1);
+				}
+
+				// Handle attention-seeking
+				if (this.happiness < ATTENTION_THRESHOLD && this.status !== 'attention' && !this.isSleeping && this.status !== 'sick') {
+					this.startAttentionSeeking();
+				} else if (this.happiness >= ATTENTION_THRESHOLD && this.status === 'attention') {
+					this.stopAttentionSeeking();
+				}
+
+				// Reset pet count over time
+				if (this.petCount > 0) {
+					this.petCount = Math.max(0, this.petCount - 0.2);
 				}
 
 				if (this.happiness <= 0 || this.energy <= 0) {
 					this.die();
 				}
 			}, DECAY_INTERVAL);
+		},
+
+		// ── Special states ───────────────────────────────────────────────────────
+		startSickness() {
+			this.stopAnimation();
+			this.status = 'sick';
+			this.playAnimation('sick');
+		},
+
+		stopSickness() {
+			this.stopAnimation();
+			this.startIdle();
+		},
+
+		startAttentionSeeking() {
+			this.stopAnimation();
+			this.status = 'attention';
+			this.playAnimation('attention');
+
+			// Flash screen to get attention
+			this.attentionInterval = setInterval(() => {
+				if (this.status !== 'attention') {
+					clearInterval(this.attentionInterval);
+					return;
+				}
+				// Screen flash effect handled by CSS
+			}, 3000);
+		},
+
+		stopAttentionSeeking() {
+			if (this.attentionInterval) {
+				clearInterval(this.attentionInterval);
+				this.attentionInterval = null;
+			}
+			this.stopAnimation();
+			this.startIdle();
 		},
 	},
 
@@ -200,6 +358,7 @@ export default {
 	beforeUnmount() {
 		this.stopAnimation();
 		clearInterval(this.decayInterval);
+		if (this.attentionInterval) clearInterval(this.attentionInterval);
 	},
 };
 </script>
@@ -240,6 +399,12 @@ export default {
 		margin-top: 5rem;
 		margin-bottom: 3rem;
 		box-shadow: inset 0 0 12px rgba(0,0,0,0.25);
+		transition: background-color 0.3s ease;
+
+		&.attention-flash {
+			background-color: #ffeb3b;
+			animation: attention-pulse 0.6s ease;
+		}
 	}
 
 	.status-bars-wrapper {
@@ -302,20 +467,20 @@ export default {
 
 .button-bar {
 	display: flex;
-	gap: 1rem;
+	gap: 0.5rem;
 
 	button {
 		all: unset;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		padding: 1.2rem;
+		padding: 0.5rem;
 		border-radius: 100%;
 		background-color: #FFFFFF;
 		aspect-ratio: 1/1;
 		text-align: center;
 		font-family: "Comic Sans MS", "Comic Sans", cursive;
-		font-size: 1rem;
+		font-size: 0.9rem;
 		font-weight: 900;
 		border: solid 5px #000000;
 		cursor: pointer;
@@ -339,12 +504,27 @@ export default {
 			opacity: 0.4;
 			cursor: not-allowed;
 		}
+
+		&.restart-btn {
+			background-color: #e74c3c;
+			color: white;
+			font-weight: 900;
+
+			&:hover:not(:disabled) {
+				background-color: #c0392b;
+			}
+		}
 	}
 }
 
 @keyframes sprite-bounce {
 	from { transform: translateY(0); }
 	to   { transform: translateY(-6px); }
+}
+
+@keyframes attention-pulse {
+	0%, 100% { background-color: #c8d8a0; }
+	50% { background-color: #ffeb3b; }
 }
 
 </style>
