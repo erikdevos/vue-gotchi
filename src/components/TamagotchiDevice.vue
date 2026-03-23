@@ -131,7 +131,7 @@ const ANIMATIONS = {
 	eating:   { frames: ['active', 'happy', 'joy', 'happy', 'neutral'],               interval: 380,  loop: false },
 	playing:  { frames: ['fun', 'kiss_01', 'kiss_02', 'happy', 'joy', 'neutral'],     interval: 380,  loop: false },
 	petting:  { frames: ['kiss_01', 'kiss_02', 'happy', 'joy', 'neutral'],           interval: 400,  loop: false },
-	sleeping: { frames: ['sleep'],                                                     interval: 2000, loop: true  },
+	sleeping: { frames: ['sleep_01', 'sleep_02'],                                      interval: 2000, loop: true  },
 	waking:   { frames: ['neutral', 'casual', 'calm'],                                interval: 600,  loop: false },
 	sick:     { frames: ['mad', 'sad', 'mad'],                                         interval: 800,  loop: true  },
 	overfeeding: { frames: ['mad', 'sad', 'mad', 'sad'],                               interval: 400,  loop: false },
