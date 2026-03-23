@@ -19,47 +19,75 @@
 					<!-- Normal sprite -->
 					<img v-if="!isPlayingGame" alt="" :src="currentSprite">
 					
-					<!-- Rock Paper Scissors Game -->
+					<!-- Games -->
 					<div v-if="isPlayingGame" class="game-board">
 						<!-- Gotchi sprite during game -->
 						<div class="game-gotchi-sprite">
 							<img alt="" :src="currentSprite">
 						</div>
 						
-						<!-- Game title -->
-						<div class="game-title">Rock Paper Scissors VS GOTCHI</div>
-						
-						<!-- Choice buttons -->
-						<div v-if="gameState === 'playing'" class="game-choices">
-							<button @click="makeChoice('rock')" class="choice-btn">
-								<div class="choice-icon rock-icon"></div>
-								<span>ROCK</span>
-							</button>
-							<button @click="makeChoice('paper')" class="choice-btn">
-								<div class="choice-icon paper-icon"></div>
-								<span>PAPER</span>
-							</button>
-							<button @click="makeChoice('scissors')" class="choice-btn">
-								<div class="choice-icon scissors-icon"></div>
-								<span>SCISSORS</span>
-							</button>
-						</div>
-						
-						<!-- Result display -->
-						<div v-if="gameState === 'reveal'" class="game-result">
-							<div class="choices-display">
-								<div class="choice-display">
-									<div class="choice-icon" :class="playerChoice + '-icon'"></div>
-									<span>YOU</span>
+						<!-- Rock Paper Scissors -->
+						<div v-if="currentGame === 'rps'" class="rps-game">
+							<div class="game-title">Rock Paper Scissors VS GOTCHI</div>
+							
+							<!-- Choice buttons -->
+							<div v-if="gameState === 'playing'" class="game-choices">
+								<button @click="makeChoice('rock')" class="choice-btn">
+									<div class="choice-icon rock-icon"></div>
+									<span>ROCK</span>
+								</button>
+								<button @click="makeChoice('paper')" class="choice-btn">
+									<div class="choice-icon paper-icon"></div>
+									<span>PAPER</span>
+								</button>
+								<button @click="makeChoice('scissors')" class="choice-btn">
+									<div class="choice-icon scissors-icon"></div>
+									<span>SCISSORS</span>
+								</button>
+							</div>
+							
+							<!-- Result display -->
+							<div v-if="gameState === 'reveal'" class="game-result">
+								<div class="choices-display">
+									<div class="choice-display">
+										<div class="choice-icon" :class="playerChoice + '-icon'"></div>
+										<span>YOU</span>
+									</div>
+									<div class="vs-text">VS</div>
+									<div class="choice-display">
+										<div class="choice-icon" :class="gotchiChoice + '-icon'"></div>
+										<span>GOTCHI</span>
+									</div>
 								</div>
-								<div class="vs-text">VS</div>
-								<div class="choice-display">
-									<div class="choice-icon" :class="gotchiChoice + '-icon'"></div>
-									<span>GOTCHI</span>
+								<div class="result-text" :class="gameResult">
+									{{ gameResult.toUpperCase() }}!
 								</div>
 							</div>
-							<div class="result-text" :class="gameResult">
-								{{ gameResult.toUpperCase() }}!
+						</div>
+						
+						<!-- Tic-Tac-Toe -->
+						<div v-if="currentGame === 'tictactoe'" class="ttt-game">
+							<div class="game-title">Tic-Tac-Toe VS GOTCHI</div>
+							
+							<!-- Game board -->
+							<div v-if="gameState === 'playing'" class="ttt-board">
+								<button
+									v-for="(cell, index) in tttBoard"
+									:key="index"
+									@click="makeTTTMove(index)"
+									:disabled="cell !== null"
+									class="ttt-cell"
+								>
+									<span v-if="cell === 'X'" class="ttt-x">✕</span>
+									<span v-if="cell === 'O'" class="ttt-o">○</span>
+								</button>
+							</div>
+							
+							<!-- Result display -->
+							<div v-if="gameState === 'reveal'" class="game-result">
+								<div class="result-text">
+									{{ gameResult }}
+								</div>
 							</div>
 						</div>
 					</div>
@@ -141,10 +169,17 @@ export default {
 			attentionInterval: null, // for attention-seeking behavior
 			petCount: 0, // track pet usage for diminishing returns
 			// Game state
+			currentGame: null, // 'rps' | 'tictactoe' | null
 			gameState: null, // 'playing' | 'reveal' | null
+			// RPS state
 			playerChoice: null, // 'rock' | 'paper' | 'scissors'
 			gotchiChoice: null,
 			gameResult: null, // 'win' | 'lose' | 'tie',
+			// Tic-Tac-Toe state
+			tttBoard: [null, null, null, null, null, null, null, null, null], // 3x3 grid
+			tttPlayerSymbol: 'X',
+			tttGotchiSymbol: 'O',
+			tttCurrentTurn: 'X', // 'X' or 'O'
 			overfeedCount: 0, // track overfeeding for sickness/death
 		};
 	},
@@ -232,16 +267,25 @@ export default {
 			this.playAnimation(animKey);
 		},
 
-		// ── Rock Paper Scissors Game ───────────────────────────────────────────
+		// ── Games ─────────────────────────────────────────────────────────────
 		doGame() {
 			if (!this.canAct) return;
+			
+			// Randomly select a game (extensible for future games)
+			const availableGames = ['rps', 'tictactoe'];
+			this.currentGame = availableGames[Math.floor(Math.random() * availableGames.length)];
 			
 			// Start game with neutral idle animation
 			this.status = 'game';
 			this.gameState = 'playing';
+			
+			// Reset game states
 			this.playerChoice = null;
 			this.gotchiChoice = null;
 			this.gameResult = null;
+			this.tttBoard = [null, null, null, null, null, null, null, null, null];
+			this.tttCurrentTurn = 'X';
+			
 			this.stopAnimation();
 			this.playAnimation('idle');
 		},
@@ -297,11 +341,168 @@ export default {
 
 		endGame() {
 			this.status = 'idle';
+			this.currentGame = null;
 			this.gameState = null;
 			this.playerChoice = null;
 			this.gotchiChoice = null;
 			this.gameResult = null;
+			this.tttBoard = [null, null, null, null, null, null, null, null, null];
+			this.tttCurrentTurn = 'X';
 			this.startIdle();
+		},
+
+		// ── Tic-Tac-Toe Game ──────────────────────────────────────────────────
+		makeTTTMove(index) {
+			if (this.gameState !== 'playing' || this.tttBoard[index] !== null) return;
+			if (this.tttCurrentTurn !== this.tttPlayerSymbol) return;
+			
+			// Player makes move
+			this.tttBoard[index] = this.tttPlayerSymbol;
+			
+			// Check for win/tie
+			const result = this.checkTTTWinner();
+			if (result) {
+				this.endTTTGame(result);
+				return;
+			}
+			
+			// Switch to gotchi's turn
+			this.tttCurrentTurn = this.tttGotchiSymbol;
+			
+			// Gotchi makes move after short delay
+			setTimeout(() => {
+				this.makeGotchiTTTMove();
+			}, 600);
+		},
+
+		makeGotchiTTTMove() {
+			if (this.gameState !== 'playing') return;
+			
+			// Smart AI with priority system
+			const move = this.getBestTTTMove();
+			if (move === -1) return;
+			
+			this.tttBoard[move] = this.tttGotchiSymbol;
+			
+			// Check for win/tie
+			const result = this.checkTTTWinner();
+			if (result) {
+				this.endTTTGame(result);
+				return;
+			}
+			
+			// Switch back to player's turn
+			this.tttCurrentTurn = this.tttPlayerSymbol;
+		},
+
+		getBestTTTMove() {
+			const board = this.tttBoard;
+			const ai = this.tttGotchiSymbol;
+			const player = this.tttPlayerSymbol;
+			
+			// Priority 1: Win if possible
+			for (let i = 0; i < 9; i++) {
+				if (board[i] === null) {
+					board[i] = ai;
+					if (this.checkWinnerForSymbol(ai)) {
+						board[i] = null; // Reset
+						return i;
+					}
+					board[i] = null; // Reset
+				}
+			}
+			
+			// Priority 2: Block player from winning
+			for (let i = 0; i < 9; i++) {
+				if (board[i] === null) {
+					board[i] = player;
+					if (this.checkWinnerForSymbol(player)) {
+						board[i] = null; // Reset
+						return i;
+					}
+					board[i] = null; // Reset
+				}
+			}
+			
+			// Priority 3: Take center (best strategic position)
+			if (board[4] === null) return 4;
+			
+			// Priority 4: Take corners
+			const corners = [0, 2, 6, 8];
+			const availableCorners = corners.filter(i => board[i] === null);
+			if (availableCorners.length > 0) {
+				return availableCorners[Math.floor(Math.random() * availableCorners.length)];
+			}
+			
+			// Priority 5: Take any remaining empty cell
+			for (let i = 0; i < 9; i++) {
+				if (board[i] === null) return i;
+			}
+			
+			return -1; // No moves available
+		},
+
+		checkWinnerForSymbol(symbol) {
+			const board = this.tttBoard;
+			const winPatterns = [
+				[0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
+				[0, 3, 6], [1, 4, 7], [2, 5, 8], // columns
+				[0, 4, 8], [2, 4, 6]             // diagonals
+			];
+			
+			for (const pattern of winPatterns) {
+				const [a, b, c] = pattern;
+				if (board[a] === symbol && board[b] === symbol && board[c] === symbol) {
+					return true;
+				}
+			}
+			return false;
+		},
+
+		checkTTTWinner() {
+			const board = this.tttBoard;
+			const winPatterns = [
+				[0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
+				[0, 3, 6], [1, 4, 7], [2, 5, 8], // columns
+				[0, 4, 8], [2, 4, 6]             // diagonals
+			];
+			
+			// Check for winner
+			for (const pattern of winPatterns) {
+				const [a, b, c] = pattern;
+				if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+					return board[a] === this.tttPlayerSymbol ? 'YOU WIN' : 'YOU LOSE';
+				}
+			}
+			
+			// Check for tie
+			if (board.every(cell => cell !== null)) {
+				return 'TIE';
+			}
+			
+			return null;
+		},
+
+		endTTTGame(result) {
+			this.gameResult = result;
+			
+			// Show gotchi reaction
+			this.stopAnimation();
+			if (result === 'YOU WIN') {
+				this.playAnimation('idle_sad');
+				this.happiness = Math.min(100, this.happiness + 15);
+				this.energy = Math.max(0, this.energy - 5);
+			} else if (result === 'YOU LOSE') {
+				this.playAnimation('idle_happy');
+				this.happiness = Math.max(0, this.happiness - 5);
+			} else {
+				this.playAnimation('idle');
+			}
+			
+			this.gameState = 'reveal';
+			setTimeout(() => {
+				this.endGame();
+			}, 5000);
 		},
 
 		// ── Actions ───────────────────────────────────────────────────────────
@@ -717,7 +918,7 @@ export default {
 
 .game-gotchi-sprite {
 	width: 50%;
-	margin-bottom: 1rem;
+	margin-bottom: 0.5rem;
 	display: flex;
 	justify-content: center;
 	align-items: center;
@@ -736,7 +937,7 @@ export default {
 	font-size: 0.8rem;
 	font-weight: 900;
 	color: #000;
-	margin-bottom: 1rem;
+	margin-bottom: 0.5rem;
 	text-align: center;
 }
 
@@ -888,6 +1089,63 @@ export default {
 	color: black;
 }
 
+/* ─── Tic-Tac-Toe Game ───────────────────────────────────────────── */
+.ttt-game {
+	display: flex;
+	justify-content: center;
+	flex-direction: column;
+	align-items: center;
+}
+
+.ttt-board {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 0.3rem;
+	width: 100%;
+	max-width: 5rem;
+	aspect-ratio: 1/1;
+	margin-bottom: 0.5rem;
+}
+
+.ttt-cell {
+	all: unset;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: solid 2px #000;
+	aspect-ratio: 1/1;
+	cursor: pointer;
+	user-select: none;
+	transition: all 0.15s ease;
+	font-size: 2rem;
+	font-weight: 900;
+	color: #000;
+}
+
+.ttt-cell:hover:not(:disabled) {
+	transform: scale(1.05);
+	box-shadow: 1px 1px 4px rgba(0,0,0,0.6);
+}
+
+.ttt-cell:active:not(:disabled) {
+	transform: scale(0.95);
+	box-shadow: inset 1px 1px 2px rgba(0,0,0,0.4);
+}
+
+.ttt-cell:disabled {
+	cursor: default;
+}
+
+.ttt-x {
+	font-size: 1.5rem;
+	line-height: 1;
+}
+
+.ttt-o {
+	font-size: 2rem;
+	line-height: 1;
+}
+
 @media (max-width: 600px) {
 	.game-title {
 		font-size: 0.6rem;
@@ -913,6 +1171,20 @@ export default {
 	
 	.result-text {
 		font-size: 0.7rem;
+	}
+	
+	.ttt-board {
+		max-width: 7rem;
+		gap: 0.2rem;
+	}
+	
+	.ttt-cell {
+		border-width: 2px;
+		font-size: 1.3rem;
+	}
+	
+	.ttt-x, .ttt-o {
+		font-size: 1.5rem;
 	}
 }
 
