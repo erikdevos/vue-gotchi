@@ -63,9 +63,9 @@ const ANIMATIONS = {
 };
 
 // ─── Game Constants ───────────────────────────────────────────────────────────
-const DECAY_INTERVAL  = 6000; // ms per game tick
-const HAPPINESS_DECAY = 3;    // base happiness lost per tick
-const ENERGY_DECAY    = 1.5;  // energy lost per tick
+const DECAY_INTERVAL  = 3000; // ms per game tick
+const HAPPINESS_DECAY = 1.5;  // base happiness lost per tick
+const ENERGY_DECAY    = 0.75; // energy lost per tick
 const SLEEP_REGEN     = 8;    // energy gained per tick while sleeping
 const ENERGY_CRISIS_THRESHOLD = 25; // below this, happiness decays faster
 const SICKNESS_THRESHOLD = 15; // below this energy, gotchi gets sick
@@ -381,7 +381,8 @@ export default {
 	align-items: center;
 	justify-content: center;
 	width: 100%;
-	height: 80vh;
+	height: 100%;
+	max-height: 90vh;
 	background-image: url("../assets/egg-shape.svg");
 	background-position: center center;
 	background-repeat: no-repeat;
@@ -398,13 +399,13 @@ export default {
 	position: relative;
 	display: flex;
 	background-color: #c8d8a0;
-	border: solid 8px #000000;
+	border: solid 6px #000000;
 	border-radius: 1rem;
-	height: 18rem;
-	width: 15rem;
+	height: 20rem;
+	width: 17rem;
 	justify-content: center;
-	margin-top: 5rem;
-	margin-bottom: 3rem;
+	margin-top: 3rem;
+	margin-bottom: 1.5rem;
 	box-shadow: inset 0 0 12px rgba(0,0,0,0.25);
 	transition: background-color 0.3s ease;
 }
@@ -416,6 +417,16 @@ export default {
 		margin-top: 2rem;
 		margin-bottom: 1.5rem;
 		border-width: 6px;
+	}
+}
+
+@media (max-width: 400px) {
+	.frame-screen {
+		height: 12rem;
+		width: 10rem;
+		margin-top: 1.5rem;
+		margin-bottom: 1rem;
+		border-width: 5px;
 	}
 }
 
@@ -494,19 +505,19 @@ export default {
 }
 
 .button-bar button {
-	all: unset;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
 	padding: 0.5rem;
 	border-radius: 100%;
 	background-color: #FFFFFF;
+	width: 2.5rem;
 	aspect-ratio: 1/1;
 	text-align: center;
-	font-family: "Comic Sans MS", "Comic Sans", cursive;
-	font-size: 0.9rem;
+	font-family: "Comic Sans MS", "Comic Sans", sans-serif;
+	font-size: 0.8rem;
 	font-weight: 900;
-	border: solid 5px #000000;
+	border: solid 4px #000000;
 	cursor: pointer;
 	user-select: none;
 	box-shadow: 1px 1px 5px rgba(0,0,0,0.5);
@@ -515,9 +526,10 @@ export default {
 
 @media (max-width: 600px) {
 	.button-bar button {
-		padding: 0.6rem;
+		width: 1.5rem;
+		padding: 0.5rem;
 		font-size: 0.75rem;
-		border-width: 4px;
+		border-width: 3px;
 	}
 }
 
@@ -530,7 +542,7 @@ export default {
 
 .button-bar button:active:not(:disabled) {
 	transform: translateY(0.3rem);
-	box-shadow: 1px 1px 0 rgba(0,0,0,0.3);
+	box-shadow: inset 1px 1px 3px rgba(0,0,0,0.4);
 }
 
 .button-bar button:disabled {
