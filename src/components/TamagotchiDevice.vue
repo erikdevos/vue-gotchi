@@ -128,7 +128,7 @@ const ANIMATIONS = {
 	idle_happy: { frames: ['happy', 'joy', 'happy', 'calm'],                         interval: 900,  loop: true  },
 	idle_sad:   { frames: ['sad', 'neutral', 'sad', 'calm'],                         interval: 900,  loop: true  },
 	idle_mad:   { frames: ['mad', 'sad', 'mad', 'neutral'],                          interval: 900,  loop: true  },
-	eating:   { frames: ['active', 'happy', 'joy', 'happy', 'neutral'],               interval: 380,  loop: false },
+	eating:   { frames: ['calm', 'eat_01', 'happy', 'joy', 'neutral'],               interval: 380,  loop: false },
 	playing:  { frames: ['fun', 'kiss_01', 'kiss_02', 'happy', 'joy', 'neutral'],     interval: 380,  loop: false },
 	petting:  { frames: ['kiss_01', 'kiss_02', 'happy', 'joy', 'neutral'],           interval: 400,  loop: false },
 	sleeping: { frames: ['sleep_01', 'sleep_02'],                                      interval: 2000, loop: true  },
